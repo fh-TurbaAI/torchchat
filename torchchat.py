@@ -9,6 +9,9 @@ import logging
 import subprocess
 import sys
 
+import torch
+from torch.profiler import ExecutionTraceObserver
+
 from torchchat.cli.cli import (
     add_arguments_for_verb,
     arg_init,
@@ -79,8 +82,20 @@ if __name__ == "__main__":
     elif args.command == "generate":
         check_args(args, "generate")
         from torchchat.generate import main as generate_main
+        et = ExecutionTraceObserver()
+        et.register_callback("pytorch_et.json")
+        et.start()
+        with torch.profiler.profile(
+            activities=[
+                torch.profiler.ProfilerActivity.CPU,
+                torch.profiler.ProfilerActivity.CUDA,
+            ],
+            with_stack=True,
+            on_trace_ready=torch.profiler.tensorboard_trace_handler(
+                "./", use_gzip=True)) as prof:
+            generate_main(args)
 
-        generate_main(args)
+        et.stop()
     elif args.command == "eval":
         from torchchat.usages.eval import main as eval_main
 
