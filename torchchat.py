@@ -96,6 +96,7 @@ if __name__ == "__main__":
             generate_main(args)
 
         et.stop()
+        et.cleanup()
     elif args.command == "eval":
         from torchchat.usages.eval import main as eval_main
 
